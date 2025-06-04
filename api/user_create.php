@@ -10,7 +10,15 @@ $user = new Users($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
-
+// Validar que el username no exista
+$checkQuery = 'SELECT COUNT(*) FROM users WHERE username = :username';
+$checkStmt = $db->prepare($checkQuery);
+$checkStmt->bindParam(':username', $data->username);
+$checkStmt->execute();
+if ($checkStmt->fetchColumn() > 0) {
+    echo json_encode(['message' => 'El nombre de usuario ya existe']);
+    exit;
+}
 
 // Verifica si se recibió un archivo
 if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
@@ -39,10 +47,21 @@ $user->email = $data->email;
 $user->password = password_hash($data->password, PASSWORD_BCRYPT); // Encriptar la contraseña
 $user->role = $data->role;
 
-
-
 if ($user->create()) {
-    echo json_encode(array('message' => 'Usuario creado correctamente'));
+    // Obtener el último ID insertado
+    $lastId = $db->lastInsertId();
+    // Generar el token JWT igual que en login.php
+    require_once('../vendor/autoload.php');
+    include_once('../includes/config.php');
+    $key = JWT_SECRET_KEY;
+    $payload = [
+        "id" => $lastId,
+        "username" => $user->username,
+        "iat" => time(),
+        "exp" => time() + 3600 // 1 hora de validez
+    ];
+    $jwt = \Firebase\JWT\JWT::encode($payload, $key, 'HS256');
+    echo json_encode(array('message' => 'Usuario creado correctamente', 'id' => $lastId, 'token' => $jwt));
 } else {
     echo json_encode(array('message' => 'No se pudo crear el usuario'));
 }

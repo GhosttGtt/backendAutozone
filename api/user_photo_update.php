@@ -1,35 +1,41 @@
 <?php
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 include_once('../core/initialize.php');
 include_once('../core/auth.php');
+
 $user = new Users($db);
 
-// Permitir datos por JSON o por POST
-if (
+// Solo aceptar peticiones POST con form-data
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['message' => 'Método no permitido']);
+    exit;
+}
+
+// Validar ID de usuario (aceptar también por JSON)
+if (isset($_POST['id'])) {
+    $user->id = $_POST['id'];
+} else if (isset($_GET['id'])) {
+    $user->id = $_GET['id'];
+} else if (
     isset($_SERVER['CONTENT_TYPE']) &&
     (strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)
 ) {
-    $data = json_decode(file_get_contents('php://input'), true);
-    // Si el id no está en $data, intenta buscarlo en $_POST (por si es form-data)
-    if (!isset($data['id']) && isset($_POST['id'])) {
-        $data['id'] = $_POST['id'];
-    }
+    $json = json_decode(file_get_contents('php://input'), true);
+    $user->id = $json['id'] ?? null;
 } else {
-    $data = $_POST;
+    $user->id = null;
 }
-
-$user->id = $data['id'] ?? null;
 if (!$user->id) {
     echo json_encode(['message' => 'ID de usuario requerido', 'debug' => [
-        'data' => $data,
         'post' => $_POST,
+        'get' => $_GET,
         'files' => $_FILES
     ]]);
     exit;
 }
 
+// Validar y procesar la imagen
 if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
     $upload_dir = '../img/users/';
     if (!is_dir($upload_dir)) {
@@ -45,22 +51,17 @@ if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
         exit;
     }
 } else {
-    $user->photo = $data['photo'] ?? null;
+    echo json_encode(['message' => 'No se recibió la imagen']);
+    exit;
 }
 
-// Asignar datos desde $data, no desde $_POST
-$user->name = $data['name'] ?? '';
-$user->username = $data['username'] ?? '';
-$user->email = $data['email'] ?? '';
-
-if (!empty($data['password'])) {
-    $user->password = password_hash($data['password'], PASSWORD_DEFAULT);
+// Actualizar solo la foto
+$query = 'UPDATE users SET photo = :photo WHERE id = :id';
+$stmt = $db->prepare($query);
+$stmt->bindParam(':photo', $user->photo);
+$stmt->bindParam(':id', $user->id);
+if ($stmt->execute()) {
+    echo json_encode(['message' => 'Fotografía actualizada correctamente', 'photo' => $user->photo]);
 } else {
-    $user->password = $data['old_password'] ?? '';
-}
-
-if ($user->edit()) {
-    echo json_encode(['message' => 'Usuario editado correctamente']);
-} else {
-    echo json_encode(['message' => 'No se pudo editar el usuario']);
+    echo json_encode(['message' => 'No se pudo actualizar la fotografía']);
 }

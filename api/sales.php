@@ -16,11 +16,11 @@ $result = $sale->read();
 //get the row count
 $num = $result->rowCount();
 
-if($num > 0){
+if ($num > 0) {
     $sales_arr = array();
     $sales_arr['data'] = array();
 
-    while($row = $result->fetch(PDO::FETCH_ASSOC)){
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         extract($row);
         $sale_item = array(
             'id' => $id,
@@ -38,8 +38,9 @@ if($num > 0){
             'cars_type' => $cars_type,
             'total' => $total,
             'payment_id' => $payment_id,
-            'payment' => $payment,         
- 
+            'payment' => $payment,
+            'date_sale' => $dateSales,
+
         );
         // Push to "data"
         array_push($sales_arr['data'], $sale_item);
@@ -47,8 +48,7 @@ if($num > 0){
 
     // convert to JSON and output
     echo json_encode($sales_arr);
-}else{
+} else {
 
     echo json_encode(array('message' => 'No posts found'));
-
 }

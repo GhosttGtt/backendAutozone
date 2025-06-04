@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Test subir foto usuario</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .msg {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Subir foto de usuario</h2>
+        <form id="photoForm" enctype="multipart/form-data">
+            <label for="id">ID de usuario:</label>
+            <input type="text" id="id" name="id" required>
+            <label for="photo">Foto:</label>
+            <input type="file" id="photo" name="photo" accept="image/*" required>
+            <button type="submit">Subir foto</button>
+        </form>
+        <div class="msg" id="msg"></div>
+        <div id="preview"></div>
+    </div>
+    <script>
+        document.getElementById('photoForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const msg = document.getElementById('msg');
+            msg.textContent = '';
+            document.getElementById('preview').innerHTML = '';
+            try {
+                const serverDev = 'http://localhost/backendAuto/backendAutozone';
+                const serverProd = 'https://alexcg.de/autozone';
+                let serverActive = serverProd;
+                const token = localStorage.getItem('token') || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTYsInVzZXJuYW1lIjoiZ2hvc3QiLCJpYXQiOjE3NDg2NTA0MjksImV4cCI6MTc0ODY1NDAyOX0.iI-_HGQLTc7U1hM366s4OwkD_pZ3-Pd46SHI1DLlp2I';
+                const response = await fetch(`${serverActive}/api/user_photo_update.php`, {
+                    method: 'POST',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                    body: formData
+                });
+                const data = await response.json();
+                msg.textContent = data.message || 'Foto subida correctamente.';
+                if (data.photo) {
+                    const imgUrl = `${serverActive}/img/users/${data.photo}`;
+                    document.getElementById('preview').innerHTML = `<img src="${imgUrl}" style="max-width:200px;max-height:200px;margin-top:10px;">`;
+                }
+            } catch (err) {
+                msg.textContent = 'Error en la petición.';
+            }
+        });
+    </script>
+</body>
+
+</html>
