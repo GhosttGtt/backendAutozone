@@ -219,7 +219,7 @@ if (empty($token)) { ?>
                 msg.textContent = 'Las contraseñas no coinciden.';
                 return;
             }
-            const response = await fetch('api/password_update.php', {
+            const response = await fetch('api/password_update_client.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
