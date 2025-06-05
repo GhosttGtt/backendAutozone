@@ -40,6 +40,7 @@ if ($num > 0) {
             'payment_id' => $payment_id,
             'payment' => $payment,
             'date_sale' => $dateSales,
+            'status_id' => $status_id,
 
         );
         // Push to "data"
